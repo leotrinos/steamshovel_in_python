@@ -12,16 +12,16 @@ import matplotlib.ticker as ticker
 from scipy.optimize import curve_fit
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.gridspec as gridspec
+from matplotlib.patches import FancyArrowPatch
+from mpl_toolkits.mplot3d import proj3d
+from matplotlib.patches import Rectangle
 import sklearn 
 import math
 from matplotlib.widgets import Slider, Button, RadioButtons
 import pandas as pd 
-
 import tables 
 import glob
-from matplotlib.patches import FancyArrowPatch
-from mpl_toolkits.mplot3d import proj3d
-import shutil
+
 
 # NOTE: this file reads h5 files with pulse info and visualize the event.
 # To visualize one event, open the terminal, then: ./steamshovel.py -i filename.h5 
@@ -61,7 +61,7 @@ def cuboid_data(center, size):
 
 """ IT ineff parametrization """ 
 
-ineff_params = np.loadtxt('/Users/yang/Desktop/IceCube/Codes/my_proj/analysis_1_downgoing_neutrino/1_distribution_plots/IT_model_robust_2.txt')
+ineff_params = np.loadtxt('/Users/yang/Desktop/IceCube/Codes/my_proj/analysis_1_downgoing_neutrino/1_distribution_plots/IT_model_robust_Tank_pulse_2.txt')
 
 def ineff_model_new(dist,E): # E: log10 of energy!!! 
     # low stat region
@@ -126,33 +126,33 @@ charge = f.root.InIcePulsesHLC_NoDC_TW6000.cols.charge[:]
 time = f.root.InIcePulsesHLC_NoDC_TW6000.cols.time[:]
 
 try:
-    string_IT = np.concatenate((f.root.OfflineIceTopHLCVEMPulses.cols.string[:], f.root.OfflineIceTopSLCVEMPulses.cols.string[:]))
-    om_IT = np.concatenate((f.root.OfflineIceTopHLCVEMPulses.cols.om[:], f.root.OfflineIceTopSLCVEMPulses.cols.om[:]))
-    charge_IT = np.concatenate((f.root.OfflineIceTopHLCVEMPulses.cols.charge[:], f.root.OfflineIceTopSLCVEMPulses.cols.charge[:]))
-    time_IT = np.concatenate((f.root.OfflineIceTopHLCVEMPulses.cols.time[:], f.root.OfflineIceTopSLCVEMPulses.cols.time[:]))
+    string_IT = np.concatenate((f.root.OfflineIceTopHLCTankPulses.cols.string[:], f.root.OfflineIceTopSLCTankPulses.cols.string[:]))
+    om_IT = np.concatenate((f.root.OfflineIceTopHLCTankPulses.cols.om[:], f.root.OfflineIceTopSLCTankPulses.cols.om[:]))
+    charge_IT = np.concatenate((f.root.OfflineIceTopHLCTankPulses.cols.charge[:], f.root.OfflineIceTopSLCTankPulses.cols.charge[:]))
+    time_IT = np.concatenate((f.root.OfflineIceTopHLCTankPulses.cols.time[:], f.root.OfflineIceTopSLCTankPulses.cols.time[:]))
 except:
-    string_IT = f.root.OfflineIceTopSLCVEMPulses.cols.string[:]
-    om_IT = f.root.OfflineIceTopSLCVEMPulses.cols.om[:]
-    charge_IT = f.root.OfflineIceTopSLCVEMPulses.cols.charge[:]
-    time_IT = f.root.OfflineIceTopSLCVEMPulses.cols.time[:]
+    string_IT = f.root.OfflineIceTopSLCTankPulses.cols.string[:]
+    om_IT = f.root.OfflineIceTopSLCTankPulses.cols.om[:]
+    charge_IT = f.root.OfflineIceTopSLCTankPulses.cols.charge[:]
+    time_IT = f.root.OfflineIceTopSLCTankPulses.cols.time[:]
 
-params = {
-    'zenith' : np.round(math.degrees(f.root.SplineMPE.cols.zenith[:][0]), 1),
-    'log10(truncated)' : np.round(np.log10(f.root.SplineMPETruncatedEnergy_SPICEMie_BINS_Muon.cols.energy[:][0]), 2),
+# parameters to display
+params = { 
+    'zenith [deg]' : np.round(math.degrees(f.root.SplineMPE.cols.zenith[:][0]), 1),
+    'log10(muon energy)' : np.round(np.log10(f.root.SplineMPETruncatedEnergy_SPICEMie_BINS_Muon.cols.energy[:][0]), 2),
     'log10(Qtot)' : np.round(np.log10(f.root.QTot.cols.value[:][0]), 2),
-    'log10(chi2_red_new)' : np.round(np.log10(f.root.Collection.cols.chi2_red_new[:])[0], 2),
-    'd_to_IT_center' : np.round(f.root.Dist_to_IT_center.cols.value[:][0], 1),
+    'stochasticity' : np.round(np.log10(f.root.Collection.cols.chi2_red_new[:])[0], 2),
+    'dist to IT center [m]' : int(f.root.Dist_to_IT_center.cols.value[:][0]),
     'len(dEdxVector)' : int(f.root.Collection.cols.len_dEdxVector[:][0]),
-    'N_correlated_IT_HLC': int(f.root.IT_veto_double.cols.num_correlated_HLC_hits_in_window[:][0]),
-    'N_correlated_IT_SLC': int(f.root.IT_veto_double.cols.num_correlated_SLC_hits_in_window[:][0]),
-    '2_pulse_veto_passed?': int(f.root.IT_veto_double.cols.flag_window_2[:][0]),
-    'IT_ineff' : np.round(ineff_model_new(f.root.Dist_to_IT_center.cols.value[:][0], np.log10(f.root.SplineMPETruncatedEnergy_SPICEMie_BINS_Muon.cols.energy[:][0])), 5),
-
+    'N correlated IT HLC': int(f.root.IT_veto_double_Tank.cols.num_correlated_HLC_hits_in_window[:][0]),
+    'N correlated IT SLC': int(f.root.IT_veto_double_Tank.cols.num_correlated_SLC_hits_in_window[:][0]),
+    '2-hits veto passed?': ['Yes' if i else 'No' for i in [f.root.IT_veto_double_Tank.cols.flag_window_2[:][0]]][0],
+    'IT inefficiency' : np.round(ineff_model_new(f.root.Dist_to_IT_center.cols.value[:][0], np.log10(f.root.SplineMPETruncatedEnergy_SPICEMie_BINS_Muon.cols.energy[:][0])), 5),
 }
 
 """ construct coordinate matrix """
 # order of txt: string, om, x, y, z --> (1,1), (1,2),...(1,60),(2,1),...(86,60), including IT tanks
-S,O,X,Y,Z = np.loadtxt('/Users/yang/Desktop/IceCube/dom_positions.txt',dtype=float,delimiter=',',unpack=True)
+S,O,X,Y,Z = np.loadtxt('dom_positions.txt',dtype=float,delimiter=',',unpack=True)
 
 IT_om = [61, 63] # 2 tanks for each string, after merging high-gain and low-gain doms
 IT_zcoord = 1500
@@ -167,7 +167,7 @@ DeepCoreStrings = [79,80,81,82,83,84,85,86]
 
 # remove DC grids
 for i in DeepCoreStrings:
-    coord = coord[coord[:,0] != i]
+    coord = coord[(coord[:,0] != i) & (coord[:,3] != IT_zcoord)]
 coord = coord[:,1:]
 coord[:,2][coord[:,2] > 600] = IT_zcoord # shift IT position
 
@@ -207,20 +207,20 @@ s_ = np.linspace(1,86,86,dtype=int)
 o_ = np.linspace(61,64,4,dtype=int) # IT
 for s in s_:
     for o in o_:
-        if s not in DeepCoreStrings: # remove deepcore from data
+        # if s not in DeepCoreStrings: # remove deepcore from data
 
-            sel = (string_IT==s)&(om_IT==o) # select corresponding values for this DOM
-            total_q = np.sum(charge_IT[sel])
+        sel = (string_IT==s)&(om_IT==o) # select corresponding values for this DOM
+        total_q = np.sum(charge_IT[sel])
 
-            if total_q != 0:
-                
-                charges = charge_IT[sel]
-                times = time_IT[sel]
-                weighted_time = np.sum(charges*times) / np.sum(charges)
-                earliest_time = np.min(times)
+        if total_q != 0:
             
-                # data_IT.append([dom_to_coord[(s,o)][0],dom_to_coord[(s,o)][1],IT_zcoord,total_q,weighted_time]) # data: X,Y,Z,Total Charge in one DOM,Time (weighted)
-                data_IT.append([dom_to_coord[(s,o)][0],dom_to_coord[(s,o)][1],IT_zcoord,total_q,earliest_time]) # data: X,Y,Z,Total Charge in one DOM,Time (earliest)
+            charges = charge_IT[sel]
+            times = time_IT[sel]
+            weighted_time = np.sum(charges*times) / np.sum(charges)
+            earliest_time = np.min(times)
+        
+            # data_IT.append([dom_to_coord[(s,o)][0],dom_to_coord[(s,o)][1],IT_zcoord,total_q,weighted_time]) # data: X,Y,Z,Total Charge in one DOM,Time (weighted)
+            data_IT.append([dom_to_coord[(s,o)][0],dom_to_coord[(s,o)][1],IT_zcoord,total_q,earliest_time]) # data: X,Y,Z,Total Charge in one DOM,Time (earliest)
 
 df_IT = pd.DataFrame(data_IT, columns=['x','y','z','q','t'])
 print(df_IT)
@@ -231,10 +231,8 @@ df_combined = pd.concat([df_inice,df_IT],ignore_index=True)
 center = np.sum(df_inice['q'] * df_inice['t']) / np.sum(df_inice['q'])
 
 std = 2500
-# lower = center - 4.8*std
-# upper = center + 4.2*std
-lower = np.min(df_combined['t']-1)
-upper = np.max(df_combined['t']+1)
+lower = np.min(df_combined['t']-100)
+upper = np.max(df_combined['t']+100)
 
 """ Steamshovel: Main """
 
@@ -243,13 +241,19 @@ ax = plt.subplot(gs[1], projection='3d')
 
 def show_pulses(df, lower_, upper_):
 
+    # plot pulses
     ax.scatter(coord[:,0], coord[:,1], coord[:,2], s=0.3, c='black', marker='.',alpha=0.3) # DOMs
-    ax.scatter(df['x'], df['y'], df['z'], s=100*df['q']**(1/3.), c=df['t'], vmin=lower_, vmax=upper_, marker='.',alpha=1,cmap='rainbow_r') # Charges
-    
+    # reverse order to maintain correct rendering sequence for visualizing depth
+    df = df.iloc[::-1]
+    df_in = df[df['z']<1000]
+    df_up = df[df['z']>1000]
+    ax.scatter(df_in['x'], df_in['y'], df_in['z'], s=100*df_in['q']**(1/3.), c=df_in['t'], edgecolors='black', linewidths=0.2, vmin=np.min(df_inice['t']-1), vmax=np.max(df_inice['t']+1), marker='.',alpha=1,cmap='rainbow_r') # Charges
+    ax.scatter(df_up['x'], df_up['y'], df_up['z'], s=50, c=df_up['t'], edgecolors='black', linewidths=0.2, vmin=np.min(df_inice['t']-1), vmax=np.max(df_inice['t']+1), marker='*',alpha=1,cmap='rainbow_r') # Charges
+
     # --- reco event info box --- # 
     y_pos = 1
     for key,val in params.items():
-        ax.text2D(-0.1,y_pos, s=key+': ' + str(val), transform=ax.transAxes,fontsize=9)
+        ax.text2D(-0.1, y_pos, s=key+': ' + str(val), transform=ax.transAxes, fontsize=9)
         y_pos -= 0.03
 
     # reco track
@@ -305,9 +309,11 @@ print('frame '+str(frame)+', '+name+'.png')
 """ Steamshovel: Pulse distribution """
 
 ax2 = plt.subplot(gs[3])
-ax2.hist(df_inice['t'],bins=100,histtype='step',weights=df_inice['q'],log=True) # use OLD data array!
-ax2.hist(df_IT['t'],bins=100,histtype='step',weights=df_IT['q'],log=True,color='red') # use OLD data array!
-ax2.set_xlim(np.min(df_IT['t'])-1000,np.max(df_IT['t'])+1000)
+ax2.hist(df_inice['t'],bins=100,histtype='step',weights=df_inice['q'],log=True,color='dodgerblue',bottom=1e-10) # use OLD data array!
+# ax2.hist(df_IT['t'],bins=100,histtype='step',weights=df_IT['q'],log=True,color='red',bottom=1e-10) # use OLD data array!
+ax2.plot(df_IT['t'],np.ones_like(df_IT['t']),'*',markersize=5,color='red')
+ax2.set_ylim(1e-1,)
+# ax2.set_xlim(np.min(df_IT['t'])-1000,np.max(df_IT['t'])+1000)
 l1 = ax2.axvline(lower,color='darkorange')
 l2 = ax2.axvline(upper,color='m')
 for tick in ax2.xaxis.get_major_ticks():
@@ -316,7 +322,7 @@ for tick in ax2.yaxis.get_major_ticks():
     tick.label.set_fontsize(8) 
 # ax2.set_yticks([], [])
 plt.xlabel('pulse time [ns]')
-plt.ylabel('log10 charge [PE]')
+plt.ylabel('PE or hit')
 
 
 """ Steamshovel: Update() """

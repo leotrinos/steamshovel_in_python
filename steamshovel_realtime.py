@@ -241,8 +241,8 @@ ax = plt.subplot(gs[1], projection='3d')
 
 def show_pulses(df, lower_, upper_):
 
-    # plot pulses
-    ax.scatter(coord[:,0], coord[:,1], coord[:,2], s=0.3, c='black', marker='.',alpha=0.3) # DOMs
+    # plot DOMs and pulses
+    ax.scatter(coord[:,0], coord[:,1], coord[:,2], s=0.3, c='black', marker='.', alpha=0.3) # DOMs
     # reverse order to maintain correct rendering sequence for visualizing depth
     df = df.iloc[::-1]
     df_in = df[df['z']<1000]
@@ -253,7 +253,8 @@ def show_pulses(df, lower_, upper_):
     # --- reco event info box --- # 
     y_pos = 1
     for key,val in params.items():
-        ax.text2D(-0.1, y_pos, s=key+': ' + str(val), transform=ax.transAxes, fontsize=9)
+        t = ax.text2D(-0.1, y_pos, s=key+': ' + str(val), transform=ax.transAxes, fontsize=9)
+        t.set_bbox(dict(facecolor='white',edgecolor='white'))
         y_pos -= 0.03
 
     # reco track
